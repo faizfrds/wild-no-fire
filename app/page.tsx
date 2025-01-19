@@ -14,7 +14,7 @@ type InferenceResponse = {
 
 export default function Home() {
   const [model, setModel] = useState("wildfire-prediction-ews4u");
-  const [version, setVersion] = useState("2");
+  const [version, setVersion] = useState("3");
   const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_API_KEY);
   const [output, setOutput] = useState<InferenceResponse | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -32,9 +32,9 @@ export default function Home() {
   }, []);
 
   const handleInference = async () => {
+    setPlaceholder("Predicting image...");
+    
     try {
-
-      console.log(apiKey);
       const baseUrl = `https://classify.roboflow.com/${model}/${version}?api_key=${apiKey}`;
       let response;
 
@@ -63,9 +63,11 @@ export default function Home() {
       }
 
       const result: InferenceResponse = await response.json();
+      useFile && file ? setCurFile(file) : setCurUrl(imageUrl);
+      console.log(result);
       setOutput(result);
     } catch (error) {
-      setPlaceholder("Error loading response. Check your parameters.")
+      setPlaceholder("Error loading response. Check your parameters.");
       console.error(error);
     }
   };
@@ -74,7 +76,7 @@ export default function Home() {
     <div className="justify-center flex">
       <div className="p-4 w-1/2">
         <h1 className="text-2xl w-full font-bold text-center">
-          Wildfire Risk Predictor
+          Wildfire Risk Analyzer
         </h1>
         <form
           onSubmit={(e) => {
@@ -136,19 +138,19 @@ export default function Home() {
           <button
             type="submit"
             className="bg-green-500 text-white p-2 rounded-md"
-            onClick={() => {
-              useFile && file ? setCurFile(file) : setCurUrl(imageUrl);
-              setPlaceholder("Predicting image...")
-            }}
           >
-            Predict
+            Analyze image
           </button>
         </form>
         <pre className="mt-4 p-2 border bg-gray-100">
           {output && output.predictions && output.predictions.length > 0 ? (
             <>
               <img
-                src={useFile && file ? URL.createObjectURL(curFile as Blob) : curUrl}
+                src={
+                  useFile && file
+                    ? URL.createObjectURL(curFile as Blob)
+                    : curUrl
+                }
                 alt="Preview"
               />
               <div className="flex">
