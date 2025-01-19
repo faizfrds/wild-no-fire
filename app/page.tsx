@@ -74,7 +74,7 @@ export default function Home() {
 
   return (
     <div className="justify-center flex">
-      <div className="p-4 w-1/2">
+      <div className="md:p-4 md:w-1/2 p-5 w-full">
         <h1 className="text-2xl w-full font-bold text-center">
           Wildfire Risk Analyzer
         </h1>
@@ -135,6 +135,7 @@ export default function Home() {
               />
             </div>
           )}
+          
           <button
             type="submit"
             className="bg-green-500 text-white p-2 rounded-md"
