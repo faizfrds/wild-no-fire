@@ -70,14 +70,6 @@ export default function Home() {
     }
   };
 
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const selectedFile = e.target.files?.[0];
-  //   if (selectedFile) {
-  //     setFile(selectedFile);
-  //     setImageUrl(URL.createObjectURL(selectedFile)); // Create a blob URL for the file
-  //   }
-  // };
-
   return (
     <div className="justify-center flex">
       <div className="p-4 w-1/2">
@@ -156,7 +148,7 @@ export default function Home() {
           {output && output.predictions && output.predictions.length > 0 ? (
             <>
               <img
-                src={useFile && file ? URL.createObjectURL(curFile) : curUrl}
+                src={useFile && file ? URL.createObjectURL(curFile as Blob) : curUrl}
                 alt="Preview"
               />
               <div className="flex">
