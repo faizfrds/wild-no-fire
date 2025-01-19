@@ -1,101 +1,188 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import FileUploader from "@/components/FileUploader";
+
+type InferenceResponse = {
+  inference_id: string;
+  time: number;
+  image: { width: number; height: number };
+  predictions: { class: string; class_id: number; confidence: number }[];
+  top: string;
+  confidence: number;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [model, setModel] = useState("wildfire-prediction-ews4u");
+  const [version, setVersion] = useState("2");
+  const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_API_KEY);
+  const [output, setOutput] = useState<InferenceResponse | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [useFile, setUseFile] = useState(true);
+  const [curFile, setCurFile] = useState<File | null>(null);
+  const [curUrl, setCurUrl] = useState("");
+  const [placeholder, setPlaceholder] = useState("Nothing to show");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem("rf.api_key");
+    const storedModel = localStorage.getItem("rf.model");
+    if (storedApiKey) setApiKey(storedApiKey);
+    if (storedModel) setModel(storedModel);
+  }, []);
+
+  const handleInference = async () => {
+    try {
+
+      console.log(apiKey);
+      const baseUrl = `https://classify.roboflow.com/${model}/${version}?api_key=${apiKey}`;
+      let response;
+
+      if (useFile && file) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        response = await fetch(baseUrl, {
+          method: "POST",
+          body: formData,
+        });
+      } else if (!useFile && imageUrl) {
+        response = await fetch(
+          `${baseUrl}&image=${encodeURIComponent(imageUrl)}`,
+          {
+            method: "POST",
+          }
+        );
+      } else {
+        alert("Please provide a valid file or image URL.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const result: InferenceResponse = await response.json();
+      setOutput(result);
+    } catch (error) {
+      setOutput("Error loading response. Check your parameters and try again.");
+      console.error(error);
+    }
+  };
+
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const selectedFile = e.target.files?.[0];
+  //   if (selectedFile) {
+  //     setFile(selectedFile);
+  //     setImageUrl(URL.createObjectURL(selectedFile)); // Create a blob URL for the file
+  //   }
+  // };
+
+  return (
+    <div className="justify-center flex">
+      <div className="p-4 w-1/2">
+        <h1 className="text-2xl w-full font-bold text-center">
+          Wildfire Risk Predictor
+        </h1>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleInference();
+          }}
+        >
+          <div className="my-2">
+            <label>Model:</label>
+            <input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="border p-1 w-full"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div className="my-2">
+            <label>Version:</label>
+            <input
+              type="text"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              className="border p-1 w-full"
+            />
+          </div>
+          <div className="my-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setUseFile(true)}
+              className={`btn mr-2 p-2 rounded-md ${
+                useFile ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseFile(false)}
+              className={`btn  p-2 rounded-md ${
+                !useFile ? "bg-blue-500" : "bg-gray-300"
+              }`}
+            >
+              Use Image URL
+            </button>
+          </div>
+          {useFile ? (
+            <FileUploader file={file} setFile={setFile} />
+          ) : (
+            <div className="my-2">
+              <label>Image URL:</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                className="border p-1 w-full"
+              />
+            </div>
+          )}
+          <button
+            type="submit"
+            className="bg-green-500 text-white p-2 rounded-md"
+            onClick={() => {
+              useFile && file ? setCurFile(file) : setCurUrl(imageUrl);
+              setPlaceholder("Predicting image...")
+            }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            Predict
+          </button>
+        </form>
+        <pre className="mt-4 p-2 border bg-gray-100">
+          {output && output.predictions && output.predictions.length > 0 ? (
+            <>
+              <img
+                src={useFile && file ? URL.createObjectURL(curFile) : curUrl}
+                alt="Preview"
+              />
+              <div className="flex">
+                <p>{output.predictions[0].class}</p>
+                <p>
+                  {" "}
+                  Confidence:{" "}
+                  {(output.predictions[0].confidence * 100).toFixed(2)}%
+                </p>
+              </div>
+              {output.predictions[1] && (
+                <div className="flex">
+                  <p>{output.predictions[1].class}</p>
+                  <p>
+                    {" "}
+                    Confidence:{" "}
+                    {(output.predictions[1].confidence * 100).toFixed(2)}%
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p>{placeholder}</p>
+          )}
+        </pre>
+      </div>
     </div>
   );
 }
