@@ -65,7 +65,7 @@ export default function Home() {
       const result: InferenceResponse = await response.json();
       setOutput(result);
     } catch (error) {
-      setOutput("Error loading response. Check your parameters and try again.");
+      setPlaceholder("Error loading response. Check your parameters.")
       console.error(error);
     }
   };
