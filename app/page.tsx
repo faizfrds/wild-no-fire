@@ -73,10 +73,10 @@ export default function Home() {
   };
 
   return (
-    <div className="justify-center flex">
+    <div className="justify-center flex bg-gradient-to-b">
       <div className="md:p-4 md:w-1/2 p-5 w-full">
         <h1 className="text-2xl w-full font-bold text-center">
-          Wildfire Risk Analyzer
+          Wild-no-fire 🌲
         </h1>
         <form
           onSubmit={(e) => {
