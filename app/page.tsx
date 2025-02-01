@@ -39,13 +39,14 @@ export default function Home() {
   }, []);
 
   const handleInference = async () => {
-    setPlaceholder("Predicting image...");
+    
     
     try {
       const baseUrl = `https://detect.roboflow.com/${model}/${version}?api_key=${apiKey}`;
       let response;
 
       if (useFile && file) {
+        setPlaceholder("Predicting image...");
         const formData = new FormData();
         formData.append("file", file);
 
@@ -54,6 +55,7 @@ export default function Home() {
           body: formData,
         });
       } else if (!useFile && imageUrl) {
+        setPlaceholder("Predicting image...");
         response = await fetch(
           `${baseUrl}&confidence=1&image=${encodeURIComponent(imageUrl)}`,
           {
@@ -116,7 +118,7 @@ export default function Home() {
 
   return (
     <div className="justify-center flex bg-gradient-to-b">
-      <div className="md:p-4 md:w-1/2 p-5 w-full">
+      <div className="lg:p-4 lg:w-1/2 p-5 w-full">
         <h1 className="text-3xl mt-12 w-full font-bold text-center">
         🌲 Wild-no-fire 🌲
         </h1>
@@ -178,7 +180,7 @@ export default function Home() {
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                className="border p-1 w-full"
+                className="border p-2 w-full rounded-md"
               />
             </div>
           )}
