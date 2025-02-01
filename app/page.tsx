@@ -57,7 +57,7 @@ export default function Home() {
       } else if (!useFile && imageUrl) {
         setPlaceholder("Predicting image...");
         response = await fetch(
-          `${baseUrl}&confidence=1&image=${encodeURIComponent(imageUrl)}`,
+          `${baseUrl}&confidence=1&overlap=1&image=${encodeURIComponent(imageUrl)}`,
           {
             method: "POST",
           }
@@ -100,7 +100,7 @@ export default function Home() {
       // Overlay bounding boxes
      
       ctx.lineWidth = 3;
-      ctx.font = "18px Arial";
+      ctx.font = "22px Arial";
       ctx.fillStyle = "white";
 
       output.predictions.forEach((prediction) => {
