@@ -1,20 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import FileUploader from "@/components/FileUploader";
 
 type InferenceResponse = {
   inference_id: string;
   time: number;
   image: { width: number; height: number };
-  predictions: { class: string; class_id: number; confidence: number }[];
-  top: string;
-  confidence: number;
+  predictions: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    confidence: number;
+    class: string;
+  }[];
 };
 
 export default function Home() {
-  const [model, setModel] = useState("wildfire-prediction-ews4u");
-  const [version, setVersion] = useState("3");
+  const [model, setModel] = useState("wildfire-image-detection");
+  const [version, setVersion] = useState("1");
   const [apiKey, setApiKey] = useState(process.env.NEXT_PUBLIC_API_KEY);
   const [output, setOutput] = useState<InferenceResponse | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -22,7 +27,9 @@ export default function Home() {
   const [useFile, setUseFile] = useState(true);
   const [curFile, setCurFile] = useState<File | null>(null);
   const [curUrl, setCurUrl] = useState("");
-  const [placeholder, setPlaceholder] = useState("Nothing to show");
+  const [placeholder, setPlaceholder] = useState("Analyze image");
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     const storedApiKey = localStorage.getItem("rf.api_key");
@@ -35,7 +42,7 @@ export default function Home() {
     setPlaceholder("Predicting image...");
     
     try {
-      const baseUrl = `https://classify.roboflow.com/${model}/${version}?api_key=${apiKey}`;
+      const baseUrl = `https://detect.roboflow.com/${model}/${version}?api_key=${apiKey}`;
       let response;
 
       if (useFile && file) {
@@ -48,7 +55,7 @@ export default function Home() {
         });
       } else if (!useFile && imageUrl) {
         response = await fetch(
-          `${baseUrl}&image=${encodeURIComponent(imageUrl)}`,
+          `${baseUrl}&confidence=1&image=${encodeURIComponent(imageUrl)}`,
           {
             method: "POST",
           }
@@ -64,20 +71,56 @@ export default function Home() {
 
       const result: InferenceResponse = await response.json();
       useFile && file ? setCurFile(file) : setCurUrl(imageUrl);
-      console.log(result);
       setOutput(result);
+      setPlaceholder("Analyze image");
     } catch (error) {
       setPlaceholder("Error loading response. Check your parameters.");
       console.error(error);
     }
   };
 
+  useEffect(() => {
+    if (!output || !canvasRef.current || !imageRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const image = imageRef.current;
+    image.onload = () => {
+      // Adjust canvas size to match image
+      canvas.width = image.width;
+      canvas.height = image.height;
+
+      // Draw the image on the canvas
+      ctx.drawImage(image, 0, 0, image.width, image.height);
+
+      // Overlay bounding boxes
+     
+      ctx.lineWidth = 3;
+      ctx.font = "18px Arial";
+      ctx.fillStyle = "white";
+
+      output.predictions.forEach((prediction) => {
+        const { x, y, width, height, class: label, confidence } = prediction;
+        ctx.strokeStyle = label === "fire" ? "yellow" : "red";
+        ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+        ctx.fillText(
+          `${label} (${(confidence * 100).toFixed(2)}%)`,
+          x - width / 2,
+          y - height/3 
+        );
+      });
+    };
+  }, [output]);
+
   return (
     <div className="justify-center flex bg-gradient-to-b">
       <div className="md:p-4 md:w-1/2 p-5 w-full">
-        <h1 className="text-2xl w-full font-bold text-center">
-          Wild-no-fire 🌲
+        <h1 className="text-3xl mt-12 w-full font-bold text-center">
+        🌲 Wild-no-fire 🌲
         </h1>
+        <h2 className="text-center text-lg">Machine learning wildfire detection</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -90,7 +133,7 @@ export default function Home() {
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="border p-1 w-full"
+              className="border p-1 w-full rounded-md"
             />
           </div>
           <div className="my-2">
@@ -99,15 +142,18 @@ export default function Home() {
               type="text"
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-              className="border p-1 w-full"
+              className="border p-1 w-full rounded-md"
             />
           </div>
           <div className="my-2 gap-2">
+          <label>Upload image or paste URL:</label>
+          <div className="flex mt-2">
+
             <button
               type="button"
               onClick={() => setUseFile(true)}
-              className={`btn mr-2 p-2 rounded-md ${
-                useFile ? "bg-blue-500" : "bg-gray-300"
+              className={`btn mr-2 p-2 rounded-md w-[50%] ${
+                useFile ? "bg-blue-300" : "bg-gray-300"
               }`}
             >
               Upload File
@@ -115,12 +161,13 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setUseFile(false)}
-              className={`btn  p-2 rounded-md ${
-                !useFile ? "bg-blue-500" : "bg-gray-300"
+              className={`btn  p-2 rounded-md w-[50%] ${
+                !useFile ? "bg-blue-300" : "bg-gray-300"
               }`}
             >
               Use Image URL
             </button>
+          </div>
           </div>
           {useFile ? (
             <FileUploader file={file} setFile={setFile} />
@@ -138,45 +185,27 @@ export default function Home() {
           
           <button
             type="submit"
-            className="bg-green-500 text-white p-2 rounded-md"
+            className="bg-green-500 text-white p-2 rounded-md w-full mt-2"
           >
-            Analyze image
+            {placeholder}
           </button>
         </form>
-        <pre className="mt-4 p-2 border bg-gray-100">
-          {output && output.predictions && output.predictions.length > 0 ? (
+
+        <div className="mt-4">
+          {output &&
+(
             <>
+              {/* Image is hidden, only used to draw on canvas */}
               <img
-                src={
-                  useFile && file
-                    ? URL.createObjectURL(curFile as Blob)
-                    : curUrl
-                }
-                alt="Preview"
+                ref={imageRef}
+                src={useFile && file ? URL.createObjectURL(curFile as Blob) : curUrl}
+                alt="Detected"
+                className="hidden"
               />
-              <div className="flex">
-                <p>{output.predictions[0].class}</p>
-                <p>
-                  {" "}
-                  Confidence:{" "}
-                  {(output.predictions[0].confidence * 100).toFixed(2)}%
-                </p>
-              </div>
-              {output.predictions[1] && (
-                <div className="flex">
-                  <p>{output.predictions[1].class}</p>
-                  <p>
-                    {" "}
-                    Confidence:{" "}
-                    {(output.predictions[1].confidence * 100).toFixed(2)}%
-                  </p>
-                </div>
-              )}
+              <canvas ref={canvasRef} className="border bg-gray-100 w-full" />
             </>
-          ) : (
-            <p>{placeholder}</p>
           )}
-        </pre>
+        </div>
       </div>
     </div>
   );
