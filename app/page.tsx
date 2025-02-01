@@ -76,7 +76,8 @@ export default function Home() {
       setOutput(result);
       setPlaceholder("Analyze image");
     } catch (error) {
-      setPlaceholder("Error loading response. Check your parameters.");
+      alert("Error loading response, recheck your URL or image file")
+      // setPlaceholder("Error loading response. Check your parameters.");
       console.error(error);
     }
   };
