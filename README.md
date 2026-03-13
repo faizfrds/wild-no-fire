@@ -2,7 +2,7 @@
 
 **Wild-No-Fire** is a computer vision application designed to identify, classify, and monitor wildfires in real-time. Powered by the **YOLOv11** architecture, the system processes data from various camera sensors to mitigate the rising risks of climate-change-driven wildfires.
 
-![poster-image](images/poster.png)
+![poster-image](poster.png)
 
 ## Project Overview
 
